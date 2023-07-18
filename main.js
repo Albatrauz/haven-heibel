@@ -86,10 +86,6 @@ const assets = {
                 clapWings: 'red-clap-wings',
                 stop: 'red-stop'
             }
-        },
-        ground: {
-            moving: 'moving-ground',
-            stop: 'stop-ground'
         }
     }
 }
@@ -154,11 +150,6 @@ let framesMoveUp
  */
 let backgroundDay
 /**
- * Night background component.
- * @type {object}
- */
-let backgroundNight
-/**
  * Ground component.
  * @type {object}
  */
@@ -203,8 +194,7 @@ let playerName;
  */
 function preload() {
     // Backgrounds and ground
-    this.load.image(assets.scene.background.day, '/background-day.png')
-    this.load.image(assets.scene.background.night, '/background-night.png')
+    this.load.image(assets.scene.background.day, '/background-day.jpg')
     this.load.spritesheet(assets.scene.ground, '/ground-sprite.png', {
         frameWidth: window.innerWidth,
         frameHeight: 112
@@ -247,14 +237,8 @@ function preload() {
  */
 function create() {
     backgroundDay = this.add.image(0, 0, assets.scene.background.day)
-    // backgroundDay.on('pointerdown', moveBird)
-    backgroundNight = this.add.image(assets.scene.width, 256, assets.scene.background.night)
-    // backgroundNight.visible = false
-    // backgroundNight.on('pointerdown', moveBird)
     backgroundDay.setOrigin(0, 0);
-    backgroundNight.setOrigin(0, 0);
     backgroundDay.setScale(window.innerWidth / backgroundDay.width, window.innerHeight / backgroundDay.height);
-    backgroundNight.setScale(window.innerWidth / backgroundNight.width, window.innerHeight / backgroundNight.height);
 
     gapsGroup = this.physics.add.group()
     pipesGroup = this.physics.add.group()
@@ -310,32 +294,11 @@ function create() {
 
         backgroundDay.setInteractive();
         backgroundDay.on('pointerdown', moveBird)
-        backgroundNight.setInteractive();
-        backgroundNight.on('pointerdown', moveBird)
     });
     messageInitial.setDepth(30)
     messageInitial.visible = false
 
     upButton = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP)
-
-    // Ground animations
-    this.anims.create({
-        key: assets.animation.ground.moving,
-        frames: this.anims.generateFrameNumbers(assets.scene.ground, {
-            start: 0,
-            end: 2
-        }),
-        frameRate: 15,
-        repeat: -1
-    })
-    this.anims.create({
-        key: assets.animation.ground.stop,
-        frames: [{
-            key: assets.scene.ground,
-            frame: 0
-        }],
-        frameRate: 20
-    })
 
     // Red Bird Animations
     this.anims.create({
@@ -418,7 +381,6 @@ function hitBird(player) {
     gameStarted = false
 
     player.anims.play(getAnimationBird(birdName).stop)
-    ground.anims.play(assets.animation.ground.stop)
 
     gameOverBanner.visible = true
     restartButton.visible = true
@@ -434,9 +396,6 @@ function updateScore(_, gap) {
     gap.destroy()
 
     if (score % 10 == 0) {
-        backgroundDay.visible = !backgroundDay.visible
-        backgroundNight.visible = !backgroundNight.visible
-
         if (currentPipe === assets.obstacle.pipe.green)
             currentPipe = assets.obstacle.pipe.red
         else
@@ -546,7 +505,6 @@ function prepareGame(scene) {
     score = 0
     gameOver = false
     backgroundDay.visible = true
-    backgroundNight.visible = false
     messageInitial.visible = true
 
     birdName = 'red'
@@ -559,8 +517,6 @@ function prepareGame(scene) {
     scene.physics.add.collider(player, pipesGroup, hitBird, null, scene)
 
     scene.physics.add.overlap(player, gapsGroup, updateScore, null, scene)
-
-    ground.anims.play(assets.animation.ground.moving, true)
 
 }
 
