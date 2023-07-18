@@ -1,9 +1,9 @@
 import './style.css'
 import { db } from './firebase'
-import { doc, setDoc } from "firebase/firestore"; 
+import { doc, setDoc, collection } from "firebase/firestore"; 
 import Phaser from 'phaser';
 
-console.log(db);
+const usersCollection = collection(db, "users");
 
 /**
  * 
@@ -250,7 +250,9 @@ function create() {
 
     messageInitial = this.add.text(0, 100, "Enter your name:", {
         fontSize: "32px",
-        fill: "red"
+        fill: "white",
+        fontFamily: "Arial",
+        fontStyle: "bold"
     });
     messageInitial.x = (window.innerWidth / 2) - (messageInitial.width / 2);
     // Create an HTML input element
@@ -458,9 +460,7 @@ function updateScoreboard() {
     scoreboardGroup.clear(true, true)
 
     const scoreAsString = score.toString()
-    const cityRef = doc(db, 'users', playerName);
-    setDoc(cityRef, { score: score }, { merge: true });
-    
+    scoreToDatabase(score);
     localStorage.setItem("score", scoreAsString);
     const savedScore = localStorage.getItem("score");
     if (scoreAsString.length == 1)
@@ -473,6 +473,31 @@ function updateScoreboard() {
             initialPosition += assets.scoreboard.width
         }
     }
+}
+
+const scoreToDatabase = (score) => {
+    const cityRef = doc(db, 'users', playerName);
+    setDoc(cityRef, { score: score }, { merge: true });
+    checkIfUserAlreadyExists(playerName)
+    .then((exists) => {
+        if (exists) {
+        console.log('The value exists in the collection.');
+        } else {
+        console.log('The value does not exist in the collection.');
+        }
+    })
+    .catch((error) => {
+        console.log('Error checking value:', error);
+    });
+}
+
+const checkIfUserAlreadyExists = (value) => {
+    return usersCollection
+    .where('users', '==', value) // Replace 'fieldName' with the actual field name you want to search for
+    .get()
+    .then((querySnapshot) => {
+      return !querySnapshot.empty; // Returns true if documents matching the value are found
+    });
 }
 
 /**
