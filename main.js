@@ -197,6 +197,8 @@ let scoreboardGroup
  */
 let score
 
+let highScore
+
 let playerName;
 
 let submitButton;
@@ -325,6 +327,7 @@ function create() {
         // Append the input element to the game's parent container
         var parentContainer = this.sys.game.canvas.parentNode;
         parentContainer.appendChild(input);
+        localStorage.setItem("highScore", "0");
     }
 
     submitButton.visible = true;
@@ -345,6 +348,7 @@ function create() {
 
         } else {
             playerName = document.getElementById("nameInput").value;
+            checkIfUserExists(playerName);
             parentContainer.removeChild(input);
             submitButton.visible = false;
             messageInitial.setDepth(30)
@@ -383,11 +387,13 @@ function create() {
 
     prepareGame(this)
 
-    gameOverBanner = this.add.image(assets.scene.width, 206, assets.scene.gameOver)
+    gameOverBanner = this.add.image(0, 206, assets.scene.gameOver)
+    gameOverBanner.x = window.innerWidth / 2;
     gameOverBanner.setDepth(20)
     gameOverBanner.visible = false
 
-    restartButton = this.add.image(assets.scene.width, 300, assets.scene.restart).setInteractive()
+    restartButton = this.add.image(0, 300, assets.scene.restart).setInteractive()
+    restartButton.x = window.innerWidth / 2;
     restartButton.on('pointerdown', restartGame)
     restartButton.setDepth(20)
     restartButton.visible = false
@@ -520,14 +526,16 @@ function updateScoreboard() {
     scoreboardGroup.clear(true, true)
 
     const scoreAsString = score.toString()
-    scoreToDatabase(score);
     localStorage.setItem("score", scoreAsString);
     localStorage.setItem("name", playerName);
-    const savedScore = localStorage.getItem("score");
+    checkHighScore(score);
+    // const savedScore = localStorage.getItem("score");
+
+    // If statement to render the scoreboard
     if (scoreAsString.length == 1)
-        scoreboardGroup.create(assets.scene.width, 120, assets.scoreboard.base + score).setDepth(10)
+        scoreboardGroup.create((window.innerWidth / 2 - assets.scoreboard.width / 2), 120, assets.scoreboard.base + score).setDepth(10)
     else {
-        let initialPosition = assets.scene.width - ((score.toString().length * assets.scoreboard.width) / 2)
+        let initialPosition = (window.innerWidth / 2 - assets.scoreboard.width / 2) - ((score.toString().length * assets.scoreboard.width) / 2)
 
         for (let i = 0; i < scoreAsString.length; i++) {
             scoreboardGroup.create(initialPosition, 120, assets.scoreboard.base + scoreAsString[i]).setDepth(10)
@@ -537,27 +545,36 @@ function updateScoreboard() {
 }
 
 const checkIfUserExists = (playerName) => {
-    let dbToWrite = doc(db, 'users', playerName);
-    getDoc(dbToWrite,`users/${playerName}`)
-        .then((docSnapshot) => {
-            if (docSnapshot.exists()) {
-                return true;
-            } else {
-                return false;
-            }
-        });
+    const docRef = doc(db, 'users', playerName);
+
+    getDoc(docRef)
+    .then((docSnapshot) => {
+        if (docSnapshot.exists()) {
+        console.log('Document exists!');
+        return false;
+        } else {
+        console.log('Document does not exist.');
+        return true;
+        }
+    })
+    .catch((error) => {
+        console.error('Error getting document:', error);
+    });
 }
 
 
 const scoreToDatabase = (score) => {
     let dbToWrite = doc(db, 'users', playerName);
+    setDoc(dbToWrite, { score: score, date: formattedToday })
+}
 
-    if (checkIfUserExists(playerName)) {
-        alert('Naam bestaat al')
-    } else {
-        setDoc(dbToWrite, { score: score, date: formattedToday });
+const checkHighScore = (score) => {
+    console.log(highScore);
+    if (score > localStorage.getItem("highScore")) {
+        highScore = score;
+        localStorage.setItem("highScore", highScore);
+        scoreToDatabase(score);
     }
-    // setDoc(dbToWrite, { score: score, date: formattedToday }, { merge: true });
 }
 
 
@@ -605,7 +622,6 @@ function prepareGame(scene) {
     scene.physics.add.collider(player, pipesGroup, hitBird, null, scene)
 
     scene.physics.add.overlap(player, gapsGroup, updateScore, null, scene)
-
 }
 
 /**
@@ -616,7 +632,7 @@ function startGame(scene) {
     gameStarted = true
     messageInitial.visible = false
 
-    const score0 = scoreboardGroup.create(assets.scene.width, 120, assets.scoreboard.number0)
+    const score0 = scoreboardGroup.create(200, 120, assets.scoreboard.number0)
     score0.setDepth(20)
 
     makePipes(scene)
