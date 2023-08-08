@@ -1,9 +1,17 @@
 import './style.css'
 import { db } from './firebase'
-import { doc, setDoc, collection } from "firebase/firestore"; 
+import { doc, setDoc, getDoc } from "firebase/firestore"; 
 import Phaser from 'phaser';
 
-const usersCollection = collection(db, "users");
+const today = new Date();
+const yyyy = today.getFullYear();
+let mm = today.getMonth() + 1; // Months start at 0!
+let dd = today.getDate();
+
+if (dd < 10) dd = '0' + dd;
+if (mm < 10) mm = '0' + mm;
+
+const formattedToday = dd + '/' + mm + '/' + yyyy;
 
 /**
  * 
@@ -50,7 +58,7 @@ const assets = {
             },
             red: {
                 top: 'pipe-red-top',
-                bottom: 'pipe-red-bo'
+                bottom: 'pipe-red-bottom'
             }
         }
     },
@@ -127,6 +135,8 @@ let gameOverBanner
  * @type {object}
  */
 let messageInitial
+
+let messageInitialImage
 // Bird
 /**
  * Player component.
@@ -189,13 +199,15 @@ let score
 
 let playerName;
 
+let submitButton;
+
 /**
  *   Load the game assets.
  */
 function preload() {
     // Backgrounds and ground
     this.load.image(assets.scene.background.day, '/background-day.jpg')
-    this.load.spritesheet(assets.scene.ground, '/ground-sprite.png', {
+    this.load.spritesheet(assets.scene.ground, '/ground-sprite2.png', {
         frameWidth: window.innerWidth,
         frameHeight: 112
     })
@@ -207,7 +219,7 @@ function preload() {
     this.load.image(assets.obstacle.pipe.red.bottom, '/pipe-red-bottom.png')
 
     // Start game
-    this.load.image(assets.scene.messageInitial, '/message-initial.png')
+    this.load.image(assets.scene.messageInitial, '/message-initial2.png')
 
     // End game
     this.load.image(assets.scene.gameOver, '/gameover.png')
@@ -244,61 +256,109 @@ function create() {
     pipesGroup = this.physics.add.group()
     scoreboardGroup = this.physics.add.staticGroup()
 
-    ground = this.physics.add.sprite(assets.scene.width, 600, assets.scene.ground)
+    ground = this.physics.add.sprite(assets.scene.width, window.innerHeight, assets.scene.ground)
     ground.setCollideWorldBounds(true)
     ground.setDepth(10)
 
-    messageInitial = this.add.text(0, 100, "Enter your name:", {
-        fontSize: "32px",
-        fill: "white",
-        fontFamily: "Arial",
-        fontStyle: "bold"
-    });
-    messageInitial.x = (window.innerWidth / 2) - (messageInitial.width / 2);
-    // Create an HTML input element
-    var input = document.createElement("input");
-    input.type = "text";
-    input.id = "nameInput";
-    input.placeholder = "Your name";
-    input.style.width = "100px";
-    input.style.height = "20px";
-    input.style.fontSize = "16px";
-    input.style.position = "absolute";
-    input.style.top = "200px";
-    input.style.left = "50%";
-    input.style.transform = "translateX(-50%)";
-    input.style.zIndex = "9999"
+    messageInitialImage = this.add.image(0, 250, assets.scene.messageInitial)
+    messageInitialImage.setDepth(30)
+    messageInitialImage.x = window.innerWidth / 2;
+    messageInitialImage.visible = true
 
-    // Append the input element to the game's parent container
-    var parentContainer = this.sys.game.canvas.parentNode;
-    parentContainer.appendChild(input);
-    
-    var submitButton = this.add.text(0, 300, "Submit", {
+    let playedBefore = false;
+    submitButton = this.add.text(0, 550, "Starten", {
         fontSize: "24px",
         fill: "#ffffff",
-        backgroundColor: "red",
+        font: "bold 24px Arial",
+        backgroundColor: "rgba(93, 51, 49, 1)",
+        borderRadius: "4px",
         padding: {
-            left: 10,
-            right: 10,
-            top: 5,
-            bottom: 5
-        }
+            left: 20,
+            right: 20,
+            top: 10,
+            bottom: 10
+        },
+        resolution: 5,
     });
     submitButton.x = (window.innerWidth / 2) - (submitButton.width / 2);
 
+    if (localStorage.getItem("name")) {
+        console.log(localStorage.getItem("name"));
+        playerName = localStorage.getItem("name");
+        messageInitial = this.add.text(0, 425, `Welkom terug ${playerName}`, {
+            fontSize: "32px",
+            fill: "white",
+            fontFamily: "Arial",
+            fontStyle: "bold"
+        });
+        messageInitial.x = (window.innerWidth / 2) - (messageInitial.width / 2);
+        playedBefore = true;
+    } else {
+        messageInitial = this.add.text(0, 425, "Vul je naam in:", {
+            fontSize: "32px",
+            fill: "white",
+            fontFamily: "Arial",
+            fontStyle: "bold"
+        });
+        messageInitial.x = (window.innerWidth / 2) - (messageInitial.width / 2);
+        // Create an HTML input element
+        var input = document.createElement("input");
+        input.type = "text";
+        input.id = "nameInput";
+        input.placeholder = "Voor en achternaam";
+        input.style.width = "100px";
+        input.style.height = "20px";
+        input.style.fontSize = "16px";
+        input.style.position = "absolute";
+        input.style.top = "500px";
+        input.style.left = "50%";
+        input.style.transform = "translateX(-50%)";
+        input.style.zIndex = "9999"
+        input.style.width = '50vw'
+        input.style.padding = '12px 20px'
+        input.style.borderRadius = '4px'
+        input.style.outline = 'none'
+        input.style.border = 'none'
+        input.style.backgroundColor = 'rgba(93, 51, 49, 1)'
+        input.style.color = 'white'
+    
+        // Append the input element to the game's parent container
+        var parentContainer = this.sys.game.canvas.parentNode;
+        parentContainer.appendChild(input);
+    }
+
+    submitButton.visible = true;
 
     // Set the button as interactive and define its behavior
     submitButton.setInteractive();
     submitButton.on("pointerdown", function () {
-        playerName = document.getElementById("nameInput").value;
-        console.log("Player's name:", playerName);
-        // Further actions with the entered name
+        if (playedBefore) {
+            submitButton.visible = false;
+            messageInitial.setDepth(30)
+            messageInitial.visible = false
+            messageInitialImage.visible = false
 
-        backgroundDay.setInteractive();
-        backgroundDay.on('pointerdown', moveBird)
+            moveBird();
+        
+            backgroundDay.setInteractive();
+            backgroundDay.on('pointerdown', moveBird)
+
+        } else {
+            playerName = document.getElementById("nameInput").value;
+            parentContainer.removeChild(input);
+            submitButton.visible = false;
+            messageInitial.setDepth(30)
+            messageInitial.visible = false
+            messageInitialImage.visible = false
+
+            moveBird();
+        
+            backgroundDay.setInteractive();
+            backgroundDay.on('pointerdown', moveBird)
+
+        }
     });
-    messageInitial.setDepth(30)
-    messageInitial.visible = false
+
 
     upButton = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP)
 
@@ -403,7 +463,6 @@ function updateScore(_, gap) {
         else
             currentPipe = assets.obstacle.pipe.green
     }
-
     updateScoreboard()
 }
 
@@ -414,17 +473,18 @@ function updateScore(_, gap) {
 function makePipes(scene) {
     if (!gameStarted || gameOver) return
 
-    const pipeTopY = Phaser.Math.Between(-120, 120)
+    const pipeTopY = Phaser.Math.Between(-100, 150)
+    const middleOfGap = window.innerWidth;
 
-    const gap = scene.add.line(288, pipeTopY + 300, 0, 0, 0, 280)
+    const gap = scene.add.line(middleOfGap, pipeTopY + 275, 0, 0, 0, 230)
     gapsGroup.add(gap)
     gap.body.allowGravity = false
-    gap.visible = false
+    gap.visible = true
 
-    const pipeTop = pipesGroup.create(288, pipeTopY, currentPipe.top)
+    const pipeTop = pipesGroup.create(middleOfGap, pipeTopY, currentPipe.top)
     pipeTop.body.allowGravity = false
 
-    const pipeBottom = pipesGroup.create(288, pipeTopY + 600, currentPipe.bottom)
+    const pipeBottom = pipesGroup.create(middleOfGap, pipeTopY + 550, currentPipe.bottom)
     pipeBottom.body.allowGravity = false
 }
 
@@ -462,43 +522,44 @@ function updateScoreboard() {
     const scoreAsString = score.toString()
     scoreToDatabase(score);
     localStorage.setItem("score", scoreAsString);
+    localStorage.setItem("name", playerName);
     const savedScore = localStorage.getItem("score");
     if (scoreAsString.length == 1)
-        scoreboardGroup.create(assets.scene.width, 30, assets.scoreboard.base + score).setDepth(10)
+        scoreboardGroup.create(assets.scene.width, 120, assets.scoreboard.base + score).setDepth(10)
     else {
         let initialPosition = assets.scene.width - ((score.toString().length * assets.scoreboard.width) / 2)
 
         for (let i = 0; i < scoreAsString.length; i++) {
-            scoreboardGroup.create(initialPosition, 30, assets.scoreboard.base + scoreAsString[i]).setDepth(10)
+            scoreboardGroup.create(initialPosition, 120, assets.scoreboard.base + scoreAsString[i]).setDepth(10)
             initialPosition += assets.scoreboard.width
         }
     }
 }
 
-const scoreToDatabase = (score) => {
-    const cityRef = doc(db, 'users', playerName);
-    setDoc(cityRef, { score: score }, { merge: true });
-    checkIfUserAlreadyExists(playerName)
-    .then((exists) => {
-        if (exists) {
-        console.log('The value exists in the collection.');
-        } else {
-        console.log('The value does not exist in the collection.');
-        }
-    })
-    .catch((error) => {
-        console.log('Error checking value:', error);
-    });
+const checkIfUserExists = (playerName) => {
+    let dbToWrite = doc(db, 'users', playerName);
+    getDoc(dbToWrite,`users/${playerName}`)
+        .then((docSnapshot) => {
+            if (docSnapshot.exists()) {
+                return true;
+            } else {
+                return false;
+            }
+        });
 }
 
-const checkIfUserAlreadyExists = (value) => {
-    return usersCollection
-    .where('users', '==', value) // Replace 'fieldName' with the actual field name you want to search for
-    .get()
-    .then((querySnapshot) => {
-      return !querySnapshot.empty; // Returns true if documents matching the value are found
-    });
+
+const scoreToDatabase = (score) => {
+    let dbToWrite = doc(db, 'users', playerName);
+
+    if (checkIfUserExists(playerName)) {
+        alert('Naam bestaat al')
+    } else {
+        setDoc(dbToWrite, { score: score, date: formattedToday });
+    }
+    // setDoc(dbToWrite, { score: score, date: formattedToday }, { merge: true });
 }
+
 
 /**
  * Restart the game. 
@@ -512,6 +573,8 @@ function restartGame() {
     player.destroy()
     gameOverBanner.visible = false
     restartButton.visible = false
+    messageInitialImage.visible = true
+    submitButton.visible = true
 
     const gameScene = game.scene.scenes[0]
     prepareGame(gameScene)
@@ -553,7 +616,7 @@ function startGame(scene) {
     gameStarted = true
     messageInitial.visible = false
 
-    const score0 = scoreboardGroup.create(assets.scene.width, 30, assets.scoreboard.number0)
+    const score0 = scoreboardGroup.create(assets.scene.width, 120, assets.scoreboard.number0)
     score0.setDepth(20)
 
     makePipes(scene)

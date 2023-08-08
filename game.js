@@ -202,7 +202,7 @@ function preload() {
     this.load.image(assets.obstacle.pipe.red.bottom, '/pipe-red-bottom.png')
 
     // Start game
-    this.load.image(assets.scene.messageInitial, '/message-initial.png')
+    this.load.image(assets.scene.messageInitial, '/message-initial2.png')
 
     // End game
     this.load.image(assets.scene.gameOver, '/gameover.png')
