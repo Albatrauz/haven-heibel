@@ -1,7 +1,7 @@
 import './style.css'
 import { db } from './firebase'
-import { doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js'; 
-import Phaser from './node_modules/phaser/dist/phaser.min.js';
+import { doc, setDoc, getDoc } from "@firebase/firestore"; 
+import Phaser from 'phaser';
 
 const today = new Date();
 const yyyy = today.getFullYear();
