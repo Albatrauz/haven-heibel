@@ -1,5 +1,5 @@
 import './style.css'
-import { db } from './firebase'
+import { db, firestore } from './firebase'
 import { doc, setDoc, getDoc } from "firebase/firestore"; 
 import Phaser from 'phaser';
 
