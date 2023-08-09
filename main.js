@@ -1,6 +1,6 @@
 import './style.css'
 import { db } from './firebase'
-import { doc, setDoc, getDoc } from "@firebase/firestore"; 
+import { doc, setDoc, getDoc } from "firebase/firestore"; 
 import Phaser from 'phaser';
 
 const today = new Date();
