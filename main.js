@@ -29,7 +29,7 @@ const configurations = {
             gravity: {
                 y: 300
             },
-            debug: true
+            debug: false,
         }
     },
     scene: {
@@ -46,9 +46,7 @@ const configurations = {
  */
 const assets = {
     bird: {
-        red: 'bird-red',
-        yellow: 'bird-yellow',
-        blue: 'bird-blue'
+        red: 'bird-red'
     },
     obstacle: {
         pipe: {
@@ -228,9 +226,9 @@ function preload() {
     this.load.image(assets.scene.restart, '/restart-button.png')
 
     // Birds
-    this.load.spritesheet(assets.bird.red, '/bird-red-sprite.png', {
-        frameWidth: 34,
-        frameHeight: 24
+    this.load.spritesheet(assets.bird.red, '/boat-sprite.png', {
+        frameWidth: 80,
+        frameHeight: 67
     })
 
     // Numbers
@@ -288,11 +286,12 @@ function create() {
         console.log(localStorage.getItem("name"));
         playerName = localStorage.getItem("name");
         messageInitial = this.add.text(0, 425, `Welkom terug ${playerName}`, {
-            fontSize: "32px",
+            fontSize: "26px",
             fill: "white",
             fontFamily: "Arial",
             fontStyle: "bold"
         });
+        messageInitial.text = `Welkom terug ${playerName}`;
         messageInitial.x = (window.innerWidth / 2) - (messageInitial.width / 2);
         playedBefore = true;
     } else {
@@ -348,18 +347,27 @@ function create() {
 
         } else {
             playerName = document.getElementById("nameInput").value;
-            checkIfUserExists(playerName);
-            parentContainer.removeChild(input);
-            submitButton.visible = false;
-            messageInitial.setDepth(30)
-            messageInitial.visible = false
-            messageInitialImage.visible = false
+            const docRef = doc(db, 'users', playerName);
+            getDoc(docRef)
+            .then((docSnapshot) => {
+                if (docSnapshot.exists()) {
+                    messageInitial.text = "Naam niet beschikbaar";
+                    messageInitial.x = (window.innerWidth / 2) - (messageInitial.width / 2);
+                    messageInitial.setColor('#ff0000');
+                    return;
+                } else {
+                    parentContainer.removeChild(input);
+                    submitButton.visible = false;
+                    messageInitial.setDepth(30)
+                    messageInitial.visible = false
+                    messageInitialImage.visible = false
 
-            moveBird();
-        
-            backgroundDay.setInteractive();
-            backgroundDay.on('pointerdown', moveBird)
-
+                    moveBird();
+                
+                    backgroundDay.setInteractive();
+                    backgroundDay.on('pointerdown', moveBird)
+                }
+            })
         }
     });
 
@@ -371,7 +379,8 @@ function create() {
         key: assets.animation.bird.red.clapWings,
         frames: this.anims.generateFrameNumbers(assets.bird.red, {
             start: 0,
-            end: 2
+            end: 2,
+            x: -20,
         }),
         frameRate: 10,
         repeat: -1
@@ -515,7 +524,7 @@ function moveBird() {
  * @param {string} birdColor - Game bird color asset.
  * @return {object} - Bird animation asset.
  */
-function getAnimationBird(birdColor) {
+function getAnimationBird() {
     return assets.animation.bird.red
 }
 
@@ -543,33 +552,12 @@ function updateScoreboard() {
         }
     }
 }
-
-const checkIfUserExists = (playerName) => {
-    const docRef = doc(db, 'users', playerName);
-
-    getDoc(docRef)
-    .then((docSnapshot) => {
-        if (docSnapshot.exists()) {
-        console.log('Document exists!');
-        return false;
-        } else {
-        console.log('Document does not exist.');
-        return true;
-        }
-    })
-    .catch((error) => {
-        console.error('Error getting document:', error);
-    });
-}
-
-
 const scoreToDatabase = (score) => {
     let dbToWrite = doc(db, 'users', playerName);
     setDoc(dbToWrite, { score: score, date: formattedToday })
 }
 
 const checkHighScore = (score) => {
-    console.log(highScore);
     if (score > localStorage.getItem("highScore")) {
         highScore = score;
         localStorage.setItem("highScore", highScore);
@@ -613,7 +601,14 @@ function prepareGame(scene) {
     messageInitial.visible = true
 
     birdName = 'red'
-    player = scene.physics.add.sprite(60, 265, birdName)
+    player = scene.physics.add.sprite(60, 265, birdName);
+
+    player.body.setSize(80, 80);
+    
+    // Update the physics body position to match the sprite's position
+    player.body.position.x = player.x;
+    player.body.position.y = player.y;
+    // player.x = -20;
     player.setCollideWorldBounds(true)
     player.anims.play(getAnimationBird(birdName).clapWings, true)
     player.body.allowGravity = false
