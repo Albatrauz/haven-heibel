@@ -1,6 +1,7 @@
 import './style.css'
 import { db } from './firebase'
 import { doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.1.0/firebase-firestore.js'; 
+import Phaser from 'phaser/dist/phaser.min.js';
 
 const today = new Date();
 const yyyy = today.getFullYear();
@@ -17,7 +18,7 @@ const formattedToday = dd + '/' + mm + '/' + yyyy;
  * Game configurations.
  * @name configurations
  */
-
+const nameInputScene = new Phaser.Scene("NameInput");
 const configurations = {
     type: Phaser.AUTO,
     width: window.innerWidth,
@@ -35,6 +36,7 @@ const configurations = {
         preload: preload,
         create: create,
         update: update,
+        nameInputScene: nameInputScene,
     }
 }
 
